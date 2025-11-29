@@ -13,7 +13,7 @@ cover_db/
 # Devel::NYTProf
 nytprof.out
 
-# Dist::Zilla
+# Dizt::Zilla
 /.build/
 
 # Module::Build
@@ -34,8 +34,8 @@ inc/
 /pm_to_blib
 /*.zip
 
-# Carton/Carmel
-/local/
-/.carmel/
-# cpanfile.snapshot should generally be ignored for library code, otherwise included
-# cpanfile.snapshot 
+j
+j.pl
+jj.pl
+input
+.DS_Store
