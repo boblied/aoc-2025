@@ -6,4 +6,4 @@ Modulo arithmetic.
 
 ## Task 2
  - Edge case if we start from 0 (don't double count)
- - input contains rotations greater than 100
+ - input contains rotations greater than 10s
