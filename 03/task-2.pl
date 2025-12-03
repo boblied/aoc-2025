@@ -30,21 +30,23 @@ sub joltage($bank, $need)
 {
     my $jolt ="";
 
-    for (  reverse 0 .. $need-1 )
-    {
-        # Leave enough digits to complete the task
-        my @tail = ($_ == 0 ? () : splice(@$bank, -$_ ) );
+    # Remove enough from the end so that we can satisfy $need
+    my @tail = splice(@$bank, -($need-1) );
 
+    for (  1 .. $need )
+    {
         my $digit = max @$bank;
         $jolt .= $digit;
 
         my $where = first_index { $_ == $digit } @$bank;
 
-        $logger->debug("n=$_, bank=(@$bank) tail=(@tail) digit=$digit where=$where jolt=$jolt$digit");
+        # $logger->debug("n=$_, bank=(@$bank) tail=(@tail) digit=$digit where=$where jolt=$jolt$digit");
 
-        splice(@$bank, 0, $where+1); # No longer need front of list, make shorter
+        # No longer need front of list, make shorter
+        splice(@$bank, 0, $where+1);
 
-        push @$bank, @tail; # Restore tail for next digit
+        # Restore one digit from tail for next digit
+        push @$bank, shift @tail;
     }
     $logger->info("jolt=$jolt");
     return $jolt;
