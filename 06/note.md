@@ -7,3 +7,7 @@ First impression: doesn't look that hard. Probably big numbers with possibiity o
 Read into an array, extract the columns, apply the operator.
 
 ## Task 2
+
+Notice that the input is in fixed-column format. The operators in the last row
+line up with the beginning of the columns, so use that to figure out the field
+locations.
