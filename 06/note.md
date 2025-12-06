@@ -11,3 +11,10 @@ Read into an array, extract the columns, apply the operator.
 Notice that the input is in fixed-column format. The operators in the last row
 line up with the beginning of the columns, so use that to figure out the field
 locations.
+
+Second solution: don't bother trying to parse numbers or extract fields.
+ - Extract entire columns, from right to left, collecting the numbers that
+they form.
+ - When we reach a column with an operator at the bottom, apply
+that operator to the collected numbers.
+ - Reset the number list when we see a blank columns

@@ -3,80 +3,61 @@
 #=============================================================================
 # Copyright (c) 2025, Bob Lied
 #=============================================================================
-# task-2.pl Advent of Code 2025 Day 6 Part 2
+# task-2b.pl Advent of Code 2025 Day 6 Part 2 (Second solution)
+#=============================================================================
+# Try something simpler: just operate on indidvidual columns
 #=============================================================================
 
 use v5.42;
 use FindBin qw($Bin); use lib "$FindBin::Bin/../../lib"; use AOC;
 AOC::setup;
 
-use List::Util qw/sum product max/;
-use List::MoreUtils qw/slide pairwise/;
+use List::Util qw/sum product/;
+use Term::ANSIColor;
 
 $logger->info("START");
-
-my $Total = 0;
-
-# Read in the entire array as a list of strings.
-my @Array;
-chomp(@Array = <>);
-
-# Save the operators. The location of the operators is the
-# beginning of each column
-my @Op = split " ", (my $op = pop @Array);
-
-my $Height = $#Array;
-my $Width  = $#Op;
-$logger->info("Array size is ", $Height+1, " x ", $Width+1);
-
-# Calculate the field positions from the locations of the operators
-my @Beg; my @Size;
-{
-    $op =~ s/[*+]/x/g;
-    $op .= " x";    # Mark for end of last field
-    
-    # Find all the indexes of the operators
-    while ( $op =~ m/x/g ) { push @Beg, pos($op)-1 }
-
-    # Field width is the difference between start columns
-    @Size = slide { $b-$a-1 } @Beg;
-
-    pop @Beg; # Undo fake marker for last field
-}
-
-# Convert each row into a list of fixed-width fields.
-for my ($i, $str) ( indexed @Array )
-{
-    $Array[$i] = [ pairwise { substr($str, $a, $b) } @Beg, @Size ];
-}
 
 sub add(@list) { sum @list };
 sub multiply(@list) { product @list };
 my %Calc = ( '+' => \&add, '*' => \&multiply );
 
-$Total += doColumn($_, $Calc{$Op[$_]}, \@Array) for (0 .. $Width);
+my @Array;
+while (<>)
+{
+    chomp;
+    push @Array, [ split // ];
+}
+
+my $Func;
+my $Total = 0;
+my @NumberList;
+
+for my $col ( reverse 0 .. $Array[0]->$#* )
+{
+    # Extract the column of digits
+    my @digits = map { $Array[$_][$col] } 0 .. $#Array;
+
+    my $operator = pop @digits;    # The operator or blank at the bottom
+
+    my $n = trim(join "", @digits); # Form number, remove spaces
+
+    if ( $n eq "" ) {   # Separator column
+        @NumberList = ();
+    } else {
+        push @NumberList, $n;
+    }
+
+    $logger->debug("col=$col [@digits] -> $n NumberList=[@NumberList] $operator");
+
+    if ( $operator =~ m/[*+]/ ) # Reached last column in group?
+    {
+        my $colResult = $Calc{$operator}->(@NumberList);
+        $Total += $colResult;
+
+        $logger->debug("COL $col ", colored(["red"], "colResult=$colResult"), " Total=$Total");
+    }
+}
+
 say $Total;
-
-sub doColumn($col, $op, $array)
-{
-    my @column = getCol($array, $col);
-    my $size = length($column[0]); # Fixed-width columns
-
-    # Turn each string into a list of digits
-    $column[$_] = [ split(//, $column[$_]) ] for (0 .. $#column);
-
-    # Form number from vertical slices. Addition and multiplication
-    # are commutative, so doesn't matter whether we start right or left,
-    # despite what the story implies.
-    my @num = map { trim(join "", getCol(\@column, $_)) } (0 .. $size-1);
-
-    return $op->(@num);
-}
-
-# Extract a vertical slice from an array
-sub getCol($array, $col)
-{
-    return map { $array->[$_][$col] } 0 .. $array->$#*
-}
 
 $logger->info("FINISH");
