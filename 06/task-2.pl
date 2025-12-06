@@ -34,13 +34,13 @@ my @Beg; my @Size;
 {
     $op =~ s/[*+]/x/g;
     $op .= " x";    # Mark for end of last field
-    for ( my $c = index($op, "x"); $c >= 0 ;  $c = index($op, "x", $c+1)  )
-    {
-        push @Beg, $c;
-    }
+    
+    # Find all the indexes of the operators
+    while ( $op =~ m/x/g ) { push @Beg, pos($op)-1 }
 
     # Field width is the difference between start columns
     @Size = slide { $b-$a-1 } @Beg;
+
     pop @Beg; # Undo fake marker for last field
 }
 
