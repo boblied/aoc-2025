@@ -18,20 +18,23 @@ use Array::Heap::PriorityQueue::Numeric;
 
 class Point {
     field $name :param :reader //= "0,0,0";
-    field @p : reader;
+    field @p : reader;  # Store as array of three coordinates
 
     use constant { X => 0, Y => 1, Z => 2 };
     ADJUST {
         @p = split(",", $name);
     }
 
+    # Coordinate accessors
     method x() { $p[X] }
     method y() { $p[Y] }
     method z() { $p[Z] }
 
+    # String form to use as hash key or for logging
     method show() { "($name)" }
     use overload '""' => sub { $_[0]->show() };
 
+    # Euclidean distance, not including the square root (stay in integers)
     method dist($other) {
         use List::Util qw/sum/;
         return sum map { $_ * $_ }
@@ -42,9 +45,10 @@ class Point {
 
 $logger->info("START");
 
+# Array of Point
 my @Box;
 {
-    chomp(my @input = <>);
+    chomp(my @input = <>);  # Slurp entire input into an array
     @Box = map { Point->new(name=>$_) } @input;
 }
 $logger->info(scalar(@Box), " junction boxes");
@@ -52,6 +56,8 @@ $logger->info("first: ", $Box[0]->show, " last: ", $Box[-1]->show);
 
 my $pq = Array::Heap::PriorityQueue::Numeric->new;
 
+# Calculate distance between every pair of points, but only in
+# one direction (distance is commutative).
 for my $first ( 0 .. $#Box-1 )
 {
     my $box1 = $Box[$first];
@@ -68,8 +74,8 @@ my $Total = 0;
 
 class CircuitList {
     field $logger :param;
-    field @circuit;
-    ADJUST{ @circuit = ( {} ) }
+    field @circuit;     # Array of hash references
+    ADJUST{ @circuit = ( {} ) } # Never use element 0.
 
     method find($box)
     {
@@ -88,17 +94,22 @@ class CircuitList {
 
         if ( $where1 == 0 && $where2 == 0 )
         {
+            # New pair, start a new circuit
             push @circuit, { $box1 => 1 , $box2 => 1 };
             $logger->debug("New, added $box1 $box2, count=", $#circuit);
         }
         elsif ( $where1 && $where2 && $where1 != $where2 )
         {
-            $logger->debug("Merged, $box1 $box2, now in $where1");
+            # Points have been seen before, but they're in different
+            # circuits. Add the second circuit into the first, and then
+            # remove it from the circuit list.
             $circuit[$where1]{$_} = 1 for keys %{$circuit[$where2]};
-            splice(@circuit, $where2, 1); # $circuit[$where2] = {};
+            splice(@circuit, $where2, 1);
+            $logger->debug("Merged, $box1 $box2, now in $where1");
         }
         elsif ( $where1 || $where2 )
         {
+            # One of the points is in a circuit, add the other point
             my $where = ( $where1 != 0 ) ? $where1 : $where2;
             $circuit[$where]{$box1} = 1;
             $circuit[$where]{$box2} = 1;
@@ -118,18 +129,20 @@ class CircuitList {
 
 my $Circuit = CircuitList->new(logger=>$logger);
 
+my $count;
 while ( $Limit-- > 0  &&  (my $pair = $pq->get()) )
 {
+    $count++;
     $Circuit->add($pair->[0]->name, $pair->[1]->name);
+
     if ( $Circuit->size(1) == @Box )
     {
-        $logger->info("Last pair: $pair->@*");
+        $logger->info("Last pair after $count: $pair->@*");
         $Total = $pair->[0]->x * $pair->[1]->x;
         last;
     }
 }
 
 say $Total;
-
 
 $logger->info("FINISH");
