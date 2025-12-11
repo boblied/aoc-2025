@@ -35,7 +35,8 @@ inc/
 /*.zip
 
 j
-j.pl
+j.*
 jj.pl
 input
+input.*
 .DS_Store
