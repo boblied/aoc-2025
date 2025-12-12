@@ -31,64 +31,54 @@ my %Graph;
 $logger->info("Graph has ", scalar(keys(%Graph)), " nodes");
 $logger->info("SEARCH from $Start to $End, via ", join(",", $Via->@*) );
 
-# my $dacfft = findPath(\%Graph, $Start, $End, $Via );
-my $dacfft = traverse(\%Graph, "svr", false, false, {} );
+my $dacfft = findPath(\%Graph, $Start, $End, $Via );
 
 say $dacfft;
 
-sub traverse($graph, $node, $dac, $fft, $seen)
-{
-    state %cache;
-
-    if ( $node eq 'out' )
-    {
-        return ($dac && $fft) ? 1 : 0;
-    }
-
-    my $key = join("-", $node, ($dac ? "T" : "F"), ($fft ? "T" : "F") );
-    return $cache{$key} if $cache{$key};
-
-    $seen->{$node} = true;
-
-    my $sum = 0;
-    for my $next ( $graph->{$node}->@* )
-    {
-        next if $seen->{$next};
-        $sum += traverse($graph, $next,
-                        ($dac || $node eq "dac"), ($fft || $node eq "fft"),
-                        { %$seen } ); 
-    }
-    return $cache{$key} = $sum;
-}
-
-
+$logger->info("FINISH");
+########################################################################
 sub findPath($graph, $start, $end, $via)
 {
-    my $pathCount = 0;
-
-    my @stack = ( [ "", $start, { $start => true } ] );
-
-    while ( my $x = pop @stack )
-    {
-        my ($depth, $node, $seen) = $x->@*;
-        $seen->{$node} = true;
-        for my $neighbor ( $graph->{$node}->@* )
-        {
-            $logger->debug("$depth $node -> $neighbor");
-            next if $seen->{$neighbor};
-
-            if ( $neighbor eq $end )
-            {
-                $pathCount++;
-                $logger->debug("$depth Found $end, count=$pathCount");
-            }
-            else
-            {
-                push @stack, [ "--$depth", $neighbor, { %$seen }];
-            }
-        }
-        $logger->debug("Stack depth is ", scalar(@stack));
-    }
-    return $pathCount;
+    fp($graph, "", $start, $end,
+                  { map { $_ => false } $via->@* }, { $start => false } );
 }
-$logger->info("FINISH");
+
+sub fp($graph, $depth, $node, $end, $sawVia, $visited)
+{
+    state %cache;
+    my $count = 0;
+
+    my $key = join("-", $node, grep { $sawVia->{$_} } sort keys %$sawVia);
+    $logger->debug("$depth FIND at $node count=$count key=$key");
+    if ( exists $cache{$key} )
+    {
+        $logger->debug("$depth CACHE $node=$cache{$key}");
+        return $cache{$key}
+    }
+
+    $sawVia->{$node} = true if exists $sawVia->{$node};
+
+    for my $neighbor ( $graph->{$node}->@* )
+    {
+        if ( exists $visited->{$neighbor} )
+        {
+            $logger->debug("$depth CYCLE revisited $neighbor");
+            next;
+        }
+
+        $logger->debug("$depth $node");
+        if ( $neighbor eq $end )
+        {
+            $logger->debug("$depth Found $end, count=$count");
+            $count += ( all { $_ } values %$sawVia ) ? 1 : 0;
+        }
+        else
+        {
+            $count += fp($graph, "--$depth", $neighbor, $end,
+                          { %$sawVia }, { %$visited, $node => true } );
+        }
+    }
+    $cache{$key} = $count;
+    return $count;
+}
+
