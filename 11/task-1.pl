@@ -8,7 +8,10 @@
 
 use v5.42;
 use FindBin qw($Bin); use lib "$FindBin::Bin/../../lib"; use AOC;
-AOC::setup;
+
+my $Start = "you";
+my $End   = "out";
+AOC::setup( { "start:s" => \$Start, "end:s" => \$End } );
 
 $logger->info("START");
 
@@ -23,11 +26,10 @@ my %Graph;
 }
 $logger->info("Graph has ", scalar(keys(%Graph)), " nodes");
 
-say findPath(\%Graph, "you", "out");
+say findPath(\%Graph, $Start, $End);
 
 sub findPath($graph, $start, $end)
 {
-    my %seen;
     my $pathCount = 0;
 
     my @stack = ( [ "", $start ] );
